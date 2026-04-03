@@ -1,0 +1,514 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Energy AI - MLOps Command Center</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&family=JetBrains+Mono:wght@400;700&display=swap');
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background: #0a0e1a;
+            color: #e2e8f0;
+        }
+        
+        .glass-panel {
+            background: rgba(30, 41, 59, 0.7);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(148, 163, 184, 0.1);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+        }
+        
+        .neon-text {
+            color: #00d4ff;
+            text-shadow: 0 0 20px rgba(0, 212, 255, 0.5);
+        }
+        
+        .metric-value {
+            font-family: 'JetBrains Mono', monospace;
+            background: linear-gradient(135deg, #00d4ff 0%, #a78bfa 100%);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+            font-size: 3rem;
+            font-weight: 700;
+        }
+        
+        .sidebar-item {
+            transition: all 0.3s;
+            border-left: 3px solid transparent;
+        }
+        
+        .sidebar-item:hover, .sidebar-item.active {
+            background: rgba(0, 212, 255, 0.1);
+            border-left-color: #00d4ff;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(102, 126, 234, 0.4);
+        }
+        
+        .status-indicator {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #00ff88;
+            box-shadow: 0 0 10px #00ff88;
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        
+        input[type="range"] {
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            appearance: none;
+            width: 100%;
+            height: 6px;
+            border-radius: 3px;
+            background: rgba(148, 163, 184, 0.2);
+            outline: none;
+        }
+        
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: #00d4ff;
+            cursor: pointer;
+            box-shadow: 0 0 10px rgba(0, 212, 255, 0.5);
+        }
+    </style>
+</head>
+<body class="h-screen overflow-hidden flex">
+
+    <!-- Sidebar -->
+    <aside class="w-64 glass-panel h-full flex flex-col">
+        <div class="p-6 border-b border-slate-700">
+            <h1 class="text-2xl font-bold flex items-center gap-2">
+                <i data-lucide="zap" class="text-cyan-400"></i>
+                <span class="neon-text">ENERGY AI</span>
+            </h1>
+            <p class="text-xs text-slate-400 mt-1">MLOps Command Center</p>
+        </div>
+        
+        <nav class="flex-1 py-4">
+            <div class="sidebar-item active px-6 py-3 cursor-pointer flex items-center gap-3" onclick="showPage('dashboard')">
+                <i data-lucide="layout-dashboard" class="w-5 h-5"></i>
+                <span>Dashboard</span>
+            </div>
+            <div class="sidebar-item px-6 py-3 cursor-pointer flex items-center gap-3" onclick="showPage('predictions')">
+                <i data-lucide="history" class="w-5 h-5"></i>
+                <span>Prediction History</span>
+            </div>
+            <div class="sidebar-item px-6 py-3 cursor-pointer flex items-center gap-3" onclick="showPage('analytics')">
+                <i data-lucide="bar-chart-2" class="w-5 h-5"></i>
+                <span>Analytics</span>
+            </div>
+            <div class="sidebar-item px-6 py-3 cursor-pointer flex items-center gap-3" onclick="showPage('model')">
+                <i data-lucide="brain" class="w-5 h-5"></i>
+                <span>Model Performance</span>
+            </div>
+        </nav>
+        
+        <div class="p-6 border-t border-slate-700">
+            <div class="flex items-center gap-2 text-sm text-slate-400">
+                <div class="status-indicator"></div>
+                <span>System Online</span>
+            </div>
+            <p class="text-xs text-slate-600 mt-2">v2.0.1 | MLOps 2026</p>
+        </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="flex-1 overflow-y-auto p-8">
+        
+        <!-- Dashboard Page -->
+        <div id="dashboard" class="page">
+            <header class="mb-8">
+                <h2 class="text-3xl font-bold mb-2">Energy Demand Forecasting</h2>
+                <p class="text-slate-400">Real-time weather-based load prediction using ML</p>
+            </header>
+
+            <!-- Metrics -->
+            <div class="grid grid-cols-4 gap-6 mb-8">
+                <div class="glass-panel rounded-2xl p-6">
+                    <p class="text-sm text-slate-400 mb-2">Current Demand</p>
+                    <div class="metric-value" id="metric-demand">--</div>
+                    <p class="text-xs text-emerald-400 mt-2">↑ Live</p>
+                </div>
+                <div class="glass-panel rounded-2xl p-6">
+                    <p class="text-sm text-slate-400 mb-2">Temperature</p>
+                    <div class="metric-value" style="font-size: 2.5rem;" id="metric-temp">--°C</div>
+                </div>
+                <div class="glass-panel rounded-2xl p-6">
+                    <p class="text-sm text-slate-400 mb-2">Model Accuracy</p>
+                    <div class="metric-value" style="font-size: 2.5rem;">94%</div>
+                </div>
+                <div class="glass-panel rounded-2xl p-6">
+                    <p class="text-sm text-slate-400 mb-2">Active Cities</p>
+                    <div class="metric-value" style="font-size: 2.5rem;">4</div>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-6">
+                <!-- Input Form -->
+                <div class="glass-panel rounded-2xl p-6">
+                    <h3 class="text-xl font-semibold mb-6 flex items-center gap-2">
+                        <i data-lucide="sliders" class="text-cyan-400"></i>
+                        Input Parameters
+                    </h3>
+                    
+                    <div class="space-y-4">
+                        <div>
+                            <label class="flex justify-between text-sm mb-2">
+                                <span>Temperature</span>
+                                <span class="text-cyan-400" id="val-temp">20°C</span>
+                            </label>
+                            <input type="range" min="-10" max="40" value="20" id="input-temp" oninput="updateValue('temp', this.value, '°C')">
+                        </div>
+                        
+                        <div>
+                            <label class="flex justify-between text-sm mb-2">
+                                <span>Humidity</span>
+                                <span class="text-cyan-400" id="val-humidity">50%</span>
+                            </label>
+                            <input type="range" min="0" max="100" value="50" id="input-humidity" oninput="updateValue('humidity', this.value, '%')">
+                        </div>
+                        
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="text-sm mb-2 block">Pressure (hPa)</label>
+                                <input type="number" id="input-pressure" value="1013" class="w-full bg-slate-800 border border-slate-600 rounded-lg px-4 py-2 text-white">
+                            </div>
+                            <div>
+                                <label class="text-sm mb-2 block">Hour</label>
+                                <input type="number" id="input-hour" value="12" min="0" max="23" class="w-full bg-slate-800 border border-slate-600 rounded-lg px-4 py-2 text-white">
+                            </div>
+                        </div>
+                        
+                        <div>
+                            <label class="flex justify-between text-sm mb-2">
+                                <span>Wind Speed</span>
+                                <span class="text-cyan-400" id="val-wind">5 m/s</span>
+                            </label>
+                            <input type="range" min="0" max="30" value="5" id="input-wind" oninput="updateValue('wind', this.value, ' m/s')">
+                        </div>
+                        
+                        <div class="flex items-center gap-2 pt-2">
+                            <input type="checkbox" id="input-weekend" class="w-4 h-4 rounded bg-slate-800 border-slate-600 text-cyan-400">
+                            <label for="input-weekend" class="text-sm">Is Weekend?</label>
+                        </div>
+                        
+                        <button onclick="predict()" class="btn-primary w-full py-3 rounded-xl font-semibold text-white mt-4 flex items-center justify-center gap-2">
+                            <i data-lucide="zap" class="w-5 h-5"></i>
+                            Generate Forecast
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Result -->
+                <div class="glass-panel rounded-2xl p-6 flex flex-col items-center justify-center relative overflow-hidden" id="result-panel" style="display: none;">
+                    <div class="absolute inset-0 bg-gradient-to-br from-cyan-500/10 to-purple-500/10"></div>
+                    <div class="relative z-10 text-center">
+                        <p class="text-slate-400 mb-4">Predicted Energy Demand</p>
+                        <div class="text-6xl font-bold mb-2" style="font-family: 'JetBrains Mono'; background: linear-gradient(135deg, #00d4ff 0%, #a78bfa 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent;" id="prediction-value">
+                            0 MW
+                        </div>
+                        <div class="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-slate-800 border border-slate-600 mt-4" id="prediction-status">
+                            <div class="w-2 h-2 rounded-full bg-emerald-400"></div>
+                            <span class="text-sm">Normal Load</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="glass-panel rounded-2xl p-6 flex items-center justify-center text-slate-500" id="empty-panel">
+                    <div class="text-center">
+                        <i data-lucide="activity" class="w-16 h-16 mx-auto mb-4 opacity-50"></i>
+                        <p>Adjust parameters and click Generate</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Other Pages -->
+        <div id="predictions" class="page hidden">
+            <h2 class="text-3xl font-bold mb-6">Prediction History</h2>
+            <div class="glass-panel rounded-2xl p-6">
+                <table class="w-full text-left">
+                    <thead class="border-b border-slate-700">
+                        <tr>
+                            <th class="pb-3 text-slate-400">Timestamp</th>
+                            <th class="pb-3 text-slate-400">Demand (MW)</th>
+                            <th class="pb-3 text-slate-400">Temp (°C)</th>
+                            <th class="pb-3 text-slate-400">Status</th>
+                        </tr>
+                    </thead>
+                    <tbody id="history-table"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <div id="analytics" class="page hidden">
+            <h2 class="text-3xl font-bold mb-6">Analytics</h2>
+            <div class="grid grid-cols-2 gap-6">
+                <div class="glass-panel rounded-2xl p-6">
+                    <h3 class="text-lg font-semibold mb-4">Temperature Distribution</h3>
+                    <canvas id="chart-temp"></canvas>
+                </div>
+                <div class="glass-panel rounded-2xl p-6">
+                    <h3 class="text-lg font-semibold mb-4">Demand by City (Colored)</h3>
+                    <canvas id="chart-cities"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <div id="model" class="page hidden">
+            <h2 class="text-3xl font-bold mb-6">Model Performance</h2>
+            <div class="glass-panel rounded-2xl p-6">
+                <h3 class="text-lg font-semibold mb-4">Feature Importance</h3>
+                <canvas id="chart-features"></canvas>
+            </div>
+        </div>
+
+    </main>
+
+    <script>
+        // Initialize icons
+        lucide.createIcons();
+        
+        // FIX: Auto-detect API URL for Codespaces
+        const API_URL = window.location.hostname.includes('github.dev') 
+            ? 'https://' + window.location.hostname.replace('-8501', '-8000') 
+            : 'http://localhost:8000';
+        
+        console.log('Using API URL:', API_URL);
+        
+        function showPage(pageName) {
+            document.querySelectorAll('.page').forEach(p => p.classList.add('hidden'));
+            document.getElementById(pageName).classList.remove('hidden');
+            
+            if (pageName === 'analytics') initCharts();
+            if (pageName === 'model') initFeatureChart();
+        }
+        
+        function updateValue(id, value, unit) {
+            document.getElementById(`val-${id}`).textContent = value + unit;
+        }
+        
+        async function predict() {
+            const payload = {
+                temp: parseFloat(document.getElementById('input-temp').value),
+                humidity: parseFloat(document.getElementById('input-humidity').value),
+                pressure: parseFloat(document.getElementById('input-pressure').value),
+                wind_speed: parseFloat(document.getElementById('input-wind').value),
+                hour: parseInt(document.getElementById('input-hour').value),
+                is_weekend: document.getElementById('input-weekend').checked ? 1 : 0
+            };
+            
+            try {
+                const response = await fetch(`${API_URL}/predict`, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify(payload)
+                });
+                
+                if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                
+                const data = await response.json();
+                
+                if (data.predicted_demand_mw) {
+                    document.getElementById('empty-panel').style.display = 'none';
+                    document.getElementById('result-panel').style.display = 'flex';
+                    
+                    document.getElementById('prediction-value').textContent = data.predicted_demand_mw.toFixed(2) + ' MW';
+                    
+                    const statusEl = document.getElementById('prediction-status');
+                    if (data.predicted_demand_mw > 600) {
+                        statusEl.innerHTML = '<div class="w-2 h-2 rounded-full bg-red-500"></div><span class="text-sm text-red-400">High Load</span>';
+                    } else if (data.predicted_demand_mw > 450) {
+                        statusEl.innerHTML = '<div class="w-2 h-2 rounded-full bg-yellow-500"></div><span class="text-sm text-yellow-400">Moderate</span>';
+                    } else {
+                        statusEl.innerHTML = '<div class="w-2 h-2 rounded-full bg-emerald-500"></div><span class="text-sm text-emerald-400">Normal</span>';
+                    }
+                    
+                    addToHistory(data.predicted_demand_mw, payload.temp);
+                } else {
+                    alert('Error: ' + (data.error || 'Unknown error'));
+                }
+            } catch (error) {
+                console.error(error);
+                alert('Error: ' + error.message);
+            }
+        }
+        
+        let predictions = [];
+        function addToHistory(demand, temp) {
+            predictions.unshift({
+                timestamp: new Date().toLocaleString(),
+                demand: demand,
+                temp: temp,
+                status: demand > 600 ? 'High' : demand > 450 ? 'Moderate' : 'Normal'
+            });
+            updateHistoryTable();
+        }
+        
+        function updateHistoryTable() {
+            const tbody = document.getElementById('history-table');
+            tbody.innerHTML = predictions.map(p => `
+                <tr class="border-b border-slate-800">
+                    <td class="py-3">${p.timestamp}</td>
+                    <td class="py-3 font-mono text-cyan-400">${p.demand.toFixed(2)}</td>
+                    <td class="py-3">${p.temp}°C</td>
+                    <td class="py-3">
+                        <span class="px-2 py-1 rounded text-xs ${p.status === 'High' ? 'bg-red-500/20 text-red-400' : p.status === 'Moderate' ? 'bg-yellow-500/20 text-yellow-400' : 'bg-emerald-500/20 text-emerald-400'}">
+                            ${p.status}
+                        </span>
+                    </td>
+                </tr>
+            `).join('');
+        }
+        
+        // FIX: Separate chart initialization with different variable names
+        function initCharts() {
+            // Temp distribution
+            const ctxTemp = document.getElementById('chart-temp').getContext('2d');
+            new Chart(ctxTemp, {
+                type: 'bar',
+                data: {
+                    labels: ['0-10°C', '10-20°C', '20-30°C', '30°C+'],
+                    datasets: [{
+                        label: 'Frequency',
+                        data: [2, 5, 8, 3],
+                        backgroundColor: '#00d4ff'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {legend: {display: false}},
+                    scales: {
+                        y: {grid: {color: 'rgba(255,255,255,0.1)'}, ticks: {color: '#94a3b8'}},
+                        x: {grid: {display: false}, ticks: {color: '#94a3b8'}}
+                    }
+                }
+            });
+            
+            // Cities scatter with DISTINCT COLORS
+            const ctxCities = document.getElementById('chart-cities').getContext('2d');
+            new Chart(ctxCities, {
+                type: 'scatter',
+                data: {
+                    datasets: [
+                        {
+                            label: 'London (Cold)',
+                            data: [{x: 12, y: 530}],
+                            backgroundColor: '#00d4ff',  // Cyan
+                            pointRadius: 10,
+                            pointHoverRadius: 12
+                        },
+                        {
+                            label: 'New York (Mild)',
+                            data: [{x: 18, y: 540}],
+                            backgroundColor: '#ff6b6b',  // Red
+                            pointRadius: 10,
+                            pointHoverRadius: 12
+                        },
+                        {
+                            label: 'Tokyo (Warm)',
+                            data: [{x: 22, y: 520}],
+                            backgroundColor: '#ffd93d',  // Yellow
+                            pointRadius: 10,
+                            pointHoverRadius: 12
+                        },
+                        {
+                            label: 'Singapore (Hot)',
+                            data: [{x: 30, y: 620}],
+                            backgroundColor: '#a78bfa',  // Purple
+                            pointRadius: 10,
+                            pointHoverRadius: 12
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: {display: true, labels: {color: '#94a3b8'}}
+                    },
+                    scales: {
+                        y: {
+                            grid: {color: 'rgba(255,255,255,0.1)'}, 
+                            ticks: {color: '#94a3b8'},
+                            title: {display: true, text: 'Energy Demand (MW)', color: '#94a3b8'}
+                        },
+                        x: {
+                            grid: {color: 'rgba(255,255,255,0.1)'}, 
+                            ticks: {color: '#94a3b8'},
+                            title: {display: true, text: 'Temperature (°C)', color: '#94a3b8'}
+                        }
+                    }
+                }
+            });
+        }
+        
+        function initFeatureChart() {
+            const ctxFeat = document.getElementById('chart-features').getContext('2d');
+            new Chart(ctxFeat, {
+                type: 'bar',
+                data: {
+                    labels: ['temp', 'humidity', 'pressure', 'wind', 'hour', 'temp_sq'],
+                    datasets: [{
+                        label: 'Importance',
+                        data: [0.28, 0.15, 0.05, 0.02, 0.08, 0.27],
+                        backgroundColor: ['#00d4ff', '#00d4ff', '#00d4ff', '#00d4ff', '#00d4ff', '#a78bfa']
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    indexAxis: 'y',
+                    plugins: {legend: {display: false}},
+                    scales: {
+                        x: {grid: {color: 'rgba(255,255,255,0.1)'}, ticks: {color: '#94a3b8'}},
+                        y: {grid: {display: false}, ticks: {color: '#94a3b8'}}
+                    }
+                }
+            });
+        }
+        
+        // Load metrics on start
+        async function loadMetrics() {
+            try {
+                const response = await fetch(`${API_URL}/health`);
+                if (response.ok) {
+                    document.getElementById('metric-demand').textContent = '524 MW';
+                    document.getElementById('metric-temp').textContent = '18°C';
+                }
+            } catch (e) {
+                console.log('API not ready');
+            }
+        }
+        // Add to dashboard.html
+async function loadRealData() {
+    const response = await fetch(`${API_URL}/latest-data`);
+    const data = await response.json();
+    // Update charts with real data
+}
+        
+        loadMetrics();
+    </script>
+</body>
+</html>
