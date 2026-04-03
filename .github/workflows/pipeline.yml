@@ -12,7 +12,7 @@ jobs:
     runs-on: ubuntu-latest
     
     steps:
-    - uses: actions/checkout@v4  # Also update this to v4
+    - uses: actions/checkout@v4
     
     - name: Set up Python
       uses: actions/setup-python@v4
@@ -38,14 +38,11 @@ jobs:
         python src/models/train_model.py
     
     - name: Upload artifacts
-  uses: actions/upload-artifact@v4
-  with:
-    name: model-artifacts-${{ github.run_id }}
-    path: |
-      models/
-      data/processed/
-      mlruns/
-      # Remove frontend/ or change to docs/ if needed
+      uses: actions/upload-artifact@v4
+      with:
+        name: model-artifacts-${{ github.run_id }}
+        path: |
+          models/
+          data/processed/
+          mlruns/
         retention-days: 30
-
-        
