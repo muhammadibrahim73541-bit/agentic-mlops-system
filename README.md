@@ -1,25 +1,40 @@
-# 🌦️ Weather-Crypto MLOps Pipeline
+# ⚡ Energy Demand Forecasting - MLOps Pipeline
 
-**Live Data → ML Pipeline → FastAPI → Streamlit → GitHub Actions CI/CD**
+**Live Weather Data → ML Pipeline → FastAPI → HTML Dashboard → GitHub Actions CI/CD**
 
-## Quick Start (GitHub Codespaces)
-1. Click green "Code" button → "Codespaces" → "New codespace"
-2. In terminal: `pip install -r requirements.txt`
-3. Set secret: `export OPENWEATHER_API_KEY=your_key`
-4. Run pipeline: `python src/ingestion/fetch_data.py`
-5. Train: `python src/models/train_model.py`
-6. Start API: `uvicorn api.main:app --reload`
-7. Start Frontend: `streamlit run frontend/app.py`
+## Live Demo
+- **Dashboard**: https://muhammadibrahim73541-bit.github.io/agentic-mlops-system/
+- **API Docs**: Run locally (see below)
 
 ## Architecture
-- **Ingestion**: OpenWeatherMap + CoinGecko (free APIs)
-- **Features**: Weather severity score vs Crypto volatility
-- **Model**: Random Forest (MLflow tracked)
-- **API**: FastAPI with auto-docs at `/docs`
-- **CI/CD**: GitHub Actions (every 6 hours)
-- **Deploy**: Docker + Docker Compose
+![Architecture](docs/architecture.png)
 
-## Endpoints
-- `GET /` - Health check
-- `POST /predict` - Get volatility prediction
-- `POST /ingest` - Trigger data pipeline
+- **Ingestion**: OpenWeatherMap API (free tier)
+- **Features**: Temperature, humidity, pressure → Energy demand features
+- **Model**: Random Forest Regressor (MLflow tracked)
+- **API**: FastAPI with auto-docs at `/docs`
+- **Frontend**: HTML/CSS/JS dashboard (dark theme)
+- **CI/CD**: GitHub Actions (every 6 hours)
+- **Deploy**: Docker + GitHub Pages
+
+## Quick Start
+
+### Local Development
+```bash
+# 1. Install
+pip install -r requirements.txt
+
+# 2. Set API key (get from openweathermap.org)
+export OPENWEATHER_API_KEY=your_key
+
+# 3. Run pipeline
+python src/ingestion/fetch_data.py
+python src/features/build_features.py
+python src/models/train_model.py
+
+# 4. Start API
+uvicorn api.main:app --host 0.0.0.0 --port 8000
+
+# 5. Open dashboard (in new terminal)
+# Option A: Open docs/index.html directly in browser
+# Option B: python -m http.server 8501 --directory docs
