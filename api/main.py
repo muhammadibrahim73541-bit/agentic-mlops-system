@@ -155,8 +155,8 @@ def get_model():
 @app.get("/", response_class=FileResponse)
 async def serve_dashboard():
     """Serve the main dashboard HTML"""
-    if os.path.exists("frontend/dashboard.html"):
-        return FileResponse("frontend/dashboard.html")
+    if os.path.exists("docs/dashboard.html"):
+        return FileResponse("docs/dashboard.html")
     elif os.path.exists("dashboard.html"):
         return FileResponse("dashboard.html")
     else:

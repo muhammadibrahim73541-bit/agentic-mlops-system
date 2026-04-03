@@ -38,11 +38,14 @@ jobs:
         python src/models/train_model.py
     
     - name: Upload artifacts
-      uses: actions/upload-artifact@v4  # ← CHANGED from v3 to v4
-      with:
-        name: model-artifacts-${{ github.run_id }}
-        path: |
-          models/
-          data/processed/
-          mlruns/
+  uses: actions/upload-artifact@v4
+  with:
+    name: model-artifacts-${{ github.run_id }}
+    path: |
+      models/
+      data/processed/
+      mlruns/
+      # Remove frontend/ or change to docs/ if needed
         retention-days: 30
+
+        
