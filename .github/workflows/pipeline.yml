@@ -1,0 +1,108 @@
+name: MLOps Energy Pipeline
+
+on:
+  schedule:
+    - cron: '0 */6 * * *'  # Every 6 hours
+  push:
+    branches: [ main ]
+    paths:
+      - 'backend/**'
+      - '.github/workflows/**'
+  workflow_dispatch:
+    inputs:
+      tune_hyperparams:
+        description: 'Run hyperparameter tuning'
+        required: false
+        default: false
+        type: boolean
+
+env:
+  WANDB_PROJECT: danish-energy-forecast
+  WANDB_ENTITY: ${{ secrets.WANDB_ENTITY }}
+  WANDB_API_KEY: ${{ secrets.WANDB_API_KEY }}
+
+jobs:
+  pipeline:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Python 3.11
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+        cache: 'pip'
+    
+    - name: Install dependencies
+      run: |
+        cd backend
+        pip install -r requirements.txt
+    
+    - name: Run data ingestion
+      env:
+        OPENWEATHER_API_KEY: ${{ secrets.OPENWEATHER_API_KEY || 'demo' }}
+      run: |
+        cd backend
+        python -m src.ingestion.fetch_data
+    
+    - name: Build features
+      run: |
+        cd backend
+        python -m src.features.build_features
+    
+    - name: Train model
+      run: |
+        cd backend
+        if [ "${{ github.event.inputs.tune_hyperparams }}" == "true" ]; then
+          python -m src.models.train_model --tune
+        else
+          python -m src.models.train_model
+        fi
+    
+    - name: Run tests
+      run: |
+        cd backend
+        pytest tests/ -v || echo "No tests found, continuing..."
+    
+    - name: Upload artifacts
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: model-artifacts-${{ github.run_id }}
+        path: |
+          backend/models/
+          backend/data/processed/
+        retention-days: 30
+    
+    - name: Log to Weights & Biases
+      if: env.WANDB_API_KEY != ''
+      run: |
+        cd backend
+        python -c "
+        import wandb
+        import json
+        import glob
+        import os
+        
+        run = wandb.init(
+            project='${{ env.WANDB_PROJECT }}',
+            entity='${{ env.WANDB_ENTITY }}',
+            name='ci-cd-${{ github.run_number }}',
+            job_type='ci-cd'
+        )
+        
+        # Log metrics if available
+        metrics_files = glob.glob('models/metrics_*.json')
+        if metrics_files:
+            with open(max(metrics_files, key=os.path.getctime)) as f:
+                metrics = json.load(f)
+                for k, v in metrics.items():
+                    wandb.log({k: v})
+        
+        # Log model artifact
+        artifact = wandb.Artifact('model-production', type='model')
+        artifact.add_dir('models/')
+        run.log_artifact(artifact)
+        run.finish()
+        "

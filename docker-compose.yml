@@ -1,0 +1,60 @@
+version: '3.8'
+
+services:
+  # Backend API
+  api:
+    build: ./backend
+    container_name: energy-api
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./backend/data:/app/data
+      - ./backend/models:/app/models
+    environment:
+      - OPENWEATHER_API_KEY=${OPENWEATHER_API_KEY:-demo}
+      - WANDB_API_KEY=${WANDB_API_KEY}
+      - WANDB_PROJECT=${WANDB_PROJECT:-danish-energy-forecast}
+      - WANDB_ENTITY=${WANDB_ENTITY}
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    networks:
+      - energy-network
+
+  # Frontend Dashboard (Next.js)
+  dashboard:
+    build: ./frontend
+    container_name: energy-dashboard
+    ports:
+      - "3000:3000"
+    environment:
+      - NEXT_PUBLIC_API_URL=http://api:8000
+    depends_on:
+      api:
+        condition: service_healthy
+    networks:
+      - energy-network
+
+  # Optional: Local Weights & Biases server
+  wandb:
+    image: wandb/local:latest
+    container_name: energy-wandb
+    ports:
+      - "8080:8080"
+    environment:
+      - WANDB_BASE_URL=http://localhost:8080
+    volumes:
+      - wandb-data:/var/lib/wandb
+    networks:
+      - energy-network
+    profiles:
+      - local-wandb
+
+networks:
+  energy-network:
+    driver: bridge
+
+volumes:
+  wandb-data:

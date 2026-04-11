@@ -1,0 +1,21 @@
+# Node modules - DO NOT COMMIT
+frontend/node_modules/
+backend/node_modules/
+node_modules/
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+.env
+
+# Generated files
+data/
+models/
+mlruns/
+*.db
+*.log
+.DS_Store
+frontend/node_modules/
+node_modules/
+*.node
