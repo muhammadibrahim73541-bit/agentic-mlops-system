@@ -19,3 +19,11 @@ mlruns/
 frontend/node_modules/
 node_modules/
 *.node
+
+# Build artifacts
+.next/
+__pycache__/
+*.pyc
+*.pyo
+.mypy_cache/
+.pytest_cache/
