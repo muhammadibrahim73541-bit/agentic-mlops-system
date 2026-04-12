@@ -1,4 +1,3 @@
-cat > src/models/train_model.py << 'EOF'
 import pandas as pd
 import joblib
 import numpy as np
@@ -32,16 +31,14 @@ def train():
     else:
         X_train, X_test, y_train, y_test = X, X, y, y
     
-    # MLflow setup - CRITICAL: Use file-based tracking
+    # MLflow setup
     mlflow.set_tracking_uri("file:" + os.path.abspath("mlruns"))
     mlflow.set_experiment("energy-demand-forecasting")
     
     with mlflow.start_run():
-        # Model
         model = RandomForestRegressor(n_estimators=100, random_state=42)
         model.fit(X_train, y_train)
         
-        # Metrics
         preds = model.predict(X_test)
         mae = mean_absolute_error(y_test, preds)
         try:
@@ -49,20 +46,16 @@ def train():
         except:
             r2 = 0.0
         
-        # Log to MLflow - THIS MUST WORK
         mlflow.log_param("n_estimators", 100)
         mlflow.log_param("n_samples", len(df))
         mlflow.log_metric("MAE", mae)
         mlflow.log_metric("R2", r2)
         
-        # Log model artifact
         mlflow.sklearn.log_model(model, "model", registered_model_name="energy-demand-model")
         
-        # Save locally
         os.makedirs("models", exist_ok=True)
         joblib.dump(model, "models/demand_model.pkl")
         
-        # Save feature importance
         importance = pd.DataFrame({
             'feature': X.columns,
             'importance': model.feature_importances_
@@ -78,4 +71,3 @@ def train():
 
 if __name__ == "__main__":
     train()
-EOF
