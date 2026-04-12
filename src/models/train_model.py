@@ -76,4 +76,6 @@ def train():
         print(f"Run ID: {mlflow.active_run().info.run_id}")
 
 if __name__ == "__main__":
-    train()``
+
+if __name__ == "__main__":
+    train()
