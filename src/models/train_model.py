@@ -1,3 +1,4 @@
+cat > src/models/train_model.py << 'EOF'
 import pandas as pd
 import joblib
 import numpy as np
@@ -76,6 +77,5 @@ def train():
         print(f"Run ID: {mlflow.active_run().info.run_id}")
 
 if __name__ == "__main__":
-
-if __name__ == "__main__":
     train()
+EOF
