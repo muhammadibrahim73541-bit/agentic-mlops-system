@@ -1,117 +1,29 @@
-cat > .github/workflows/pipeline.yml << 'EOF'
 name: MLOps Energy Pipeline
 
 on:
-  schedule:
-    - cron: '0 */6 * * *'
   push:
-    branches: [ main ]
-    paths:
-      - 'src/**'
-      - 'api/**'
-      - 'requirements.txt'
-      - '.github/workflows/**'
+    branches: [main]
   workflow_dispatch:
-    inputs:
-      tune_hyperparams:
-        description: 'Run hyperparameter tuning'
-        required: false
-        default: false
-        type: boolean
-
-env:
-  WANDB_PROJECT: danish-energy-forecast
-  WANDB_ENTITY: ${{ secrets.WANDB_ENTITY }}
-  WANDB_API_KEY: ${{ secrets.WANDB_API_KEY }}
 
 jobs:
   pipeline:
     runs-on: ubuntu-latest
-    
     steps:
-    - uses: actions/checkout@v4
-    
-    - name: Set up Python 3.11
-      uses: actions/setup-python@v4
-      with:
-        python-version: '3.11'
-        cache: 'pip'
-    
-    - name: Install dependencies
-      run: pip install -r requirements.txt
-    
-    - name: Run data ingestion
-      env:
-        OPENWEATHER_API_KEY: ${{ secrets.OPENWEATHER_API_KEY || 'demo' }}
-        WANDB_API_KEY: ${{ secrets.WANDB_API_KEY }}
-      run: python -m src.ingestion.fetch_data
-    
-    - name: Build features
-      env:
-        WANDB_API_KEY: ${{ secrets.WANDB_API_KEY }}
-      run: python -m src.features.build_features
-    
-    - name: Train model
-      env:
-        WANDB_API_KEY: ${{ secrets.WANDB_API_KEY }}
-      run: |
-        if [ "${{ github.event.inputs.tune_hyperparams }}" == "true" ]; then
-          python -m src.models.train_model --tune
-        else
-          python -m src.models.train_model
-        fi
-    
-    - name: Run tests
-      run: pytest tests/ -v || echo "No tests found, continuing..."
-    
-    - name: Upload artifacts
-      uses: actions/upload-artifact@v4
-      if: always()
-      with:
-        name: model-artifacts-${{ github.run_id }}
-        path: |
-          models/
-          data/processed/
-        retention-days: 30
-    
-    - name: Log to Weights & Biases
-      if: env.WANDB_API_KEY != ''
-      env:
-        WANDB_API_KEY: ${{ secrets.WANDB_API_KEY }}
-      run: |
-        python -c "
-        import wandb
-        import json
-        import glob
-        import os
-        
-        run = wandb.init(
-            project='${{ env.WANDB_PROJECT }}',
-            entity='${{ env.WANDB_ENTITY }}',
-            name='ci-cd-${{ github.run_number }}',
-            job_type='ci-cd'
-        )
-        
-        # Log metrics if available
-        metrics_files = glob.glob('models/metrics_*.json')
-        if not metrics_files:
-            # Try the new metrics.json from train_model
-            if os.path.exists('models/metrics.json'):
-                metrics_files = ['models/metrics.json']
-        
-        if metrics_files:
-            with open(max(metrics_files, key=os.path.getctime)) as f:
-                metrics = json.load(f)
-                for k, v in metrics.items():
-                    if isinstance(v, (int, float)):
-                        wandb.log({k: v})
-        
-        # Log model artifact
-        if os.path.exists('models/'):
-            artifact = wandb.Artifact('model-production', type='model')
-            artifact.add_dir('models/')
-            run.log_artifact(artifact)
-        
-        run.finish()
-        "
-EOF
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+      - run: pip install -r requirements.txt
+      - run: python -m src.ingestion.fetch_data
+        env:
+          OPENWEATHER_API_KEY: ${{ secrets.OPENWEATHER_API_KEY || 'demo' }}
+          WANDB_API_KEY: ${{ secrets.WANDB_API_KEY }}
+      - run: python -m src.features.build_features
+      - run: python -m src.models.train_model
+        env:
+          WANDB_API_KEY: ${{ secrets.WANDB_API_KEY }}
+      - run: pytest tests/ || echo "No tests"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: model-artifacts
+          path: models/
