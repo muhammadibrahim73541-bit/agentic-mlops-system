@@ -6,7 +6,9 @@ on:
   push:
     branches: [ main ]
     paths:
-      - 'backend/**'
+      - 'src/**'
+      - 'api/**'
+      - 'requirements.txt'
       - '.github/workflows/**'
   workflow_dispatch:
     inputs:
@@ -35,25 +37,18 @@ jobs:
         cache: 'pip'
     
     - name: Install dependencies
-      run: |
-        cd backend
-        pip install -r requirements.txt
+      run: pip install -r requirements.txt
     
     - name: Run data ingestion
       env:
         OPENWEATHER_API_KEY: ${{ secrets.OPENWEATHER_API_KEY || 'demo' }}
-      run: |
-        cd backend
-        python -m src.ingestion.fetch_data
+      run: python -m src.ingestion.fetch_data
     
     - name: Build features
-      run: |
-        cd backend
-        python -m src.features.build_features
+      run: python -m src.features.build_features
     
     - name: Train model
       run: |
-        cd backend
         if [ "${{ github.event.inputs.tune_hyperparams }}" == "true" ]; then
           python -m src.models.train_model --tune
         else
@@ -61,9 +56,7 @@ jobs:
         fi
     
     - name: Run tests
-      run: |
-        cd backend
-        pytest tests/ -v || echo "No tests found, continuing..."
+      run: pytest tests/ -v || echo "No tests found, continuing..."
     
     - name: Upload artifacts
       uses: actions/upload-artifact@v4
@@ -71,14 +64,13 @@ jobs:
       with:
         name: model-artifacts-${{ github.run_id }}
         path: |
-          backend/models/
-          backend/data/processed/
+          models/
+          data/processed/
         retention-days: 30
     
     - name: Log to Weights & Biases
       if: env.WANDB_API_KEY != ''
       run: |
-        cd backend
         python -c "
         import wandb
         import json
